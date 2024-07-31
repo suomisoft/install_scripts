@@ -20,7 +20,7 @@
 #      private: false
 
     - name: domain_name
-      prompt: "Please enter the domain name you have registered. "
+      prompt: "Please enter the domain name you have registered. i.e. google.com "
       private: false
 
   tasks:
