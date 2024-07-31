@@ -1,0 +1,41 @@
+# config.py
+
+class Config:
+    MYDOMAIN = '{{ domain_name }}'
+    HOST = '{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}'
+    CHAINFILE = '{{ chainfile }}'
+    KEYFILE = '{{ keyfile }}'
+    MYGENERATORS = [
+      {
+        "name":"mistral7b",
+        "endpoint":"https://model-2qjo65pw.api.baseten.co/production/predict",
+        "key":"Api-Key YOUR BASETEN KEY",
+        "append":"in your response include only the data requested"
+      },
+      {
+        "name":"chatgpt4",
+        "endpoint":"https://api.openai.com/v1/chat/completions",
+        "key":"YOUR OPENAI KEY",
+        "append":"in your response include only the data requested"
+      }
+    ]
+    SENDGRID_FROM = 'hello@socialweb.cloud'
+    SENDGRID_TOKEN = 'YOUR SENDGRID KEY'
+    PORT = 443
+    SECRET_KEY = 'change this to make it unique'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = True
+    DEBUG = False
+    TESTING = False
+
+class ProductionConfig(Config):
+    DEBUG = False
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+
+class TestingConfig(Config):
+    TESTING = True
+
+
+

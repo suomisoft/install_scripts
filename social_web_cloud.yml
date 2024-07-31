@@ -1,0 +1,148 @@
+- name: Social web cloud configuration
+  hosts: "{{ webserver | default('localhost')}}"
+  become: true
+  remote_user: "{{ user | default('ubuntu') }}"
+  vars: 
+    ansible_ssh_private_key_file: "{{ ssh_key | default('null')}}"
+    home: "/home/socialweb"
+    keyfile: "/home/socialweb/privkey.pem"
+    chainfile: "/home/socialweb/fullchain.pem"
+  vars_prompt:
+  # Code for if we want to run this on remote servers in the future
+#    - name: user
+#      prompt: "Please type the admin username that can make changes to the webserver. Clicking enter will default to 'ubuntu' "
+#      private: false
+#    - name: webserver
+#      prompt: "Please enter the IP address of the webserver "
+#      private: false
+#    - name: ssh_key
+#      prompt: "If you are using a remote server, please enter the location of the ssh key for the user listed in the previous prompt "
+#      private: false
+
+    - name: domain_name
+      prompt: "Please enter the domain name you have registered. "
+      private: false
+
+  tasks:
+    - name: Create socialweb group 
+      group:
+        name: socialweb
+
+    - name: Create socialweb admin user
+      user:
+        name: socialweb
+        comment: Social Web Admin User
+        append: true
+        groups: sudo, socialweb
+    
+    - name: permit traffic in default zone for https service
+      shell: "ufw allow {{ item }}"
+      loop:
+        - "ssh"
+        - "http"
+        - "https"
+      register: ufw
+      changed_when: '"Skipping" not in ufw.stdout'
+
+    - name: permit traffic in default zone for https service
+      service:
+        name: ufw
+        state: started
+        enabled: true  
+
+    - name: install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python3-pip 
+        - python3-dev 
+        - build-essential 
+        - libssl-dev 
+        - libffi-dev 
+        - python3-setuptools 
+        - unzip    
+        - python3-venv
+    
+    - name: pull socialweb zip and place it in socialweb homedir
+      get_url:
+        url: "https://socialweb.cloud/swc.zip"
+        dest: "{{ home }}"
+        owner: socialweb
+
+    - name: unzip file
+      unarchive:
+        src: "{{ home }}/swc.zip"
+        dest: "{{ home }}"
+        owner: socialweb
+    
+    - name: populate config template (need to transfer example to .j2 file)
+      template:
+        src: "{{ home }}/mysite/config.py.j2"
+        dest: "{{ home }}/mysite/config.py"
+
+    - name: create virtual env for code
+      shell: "python3 -m venv {{ home }}/socialwebenv"
+
+    - name: source activate socialwebenv
+      shell: "source {{ home }}/socialwebenv/bin/activate"
+      args:
+        executable: /bin/bash
+
+    - name: install requirements
+      shell: "pip install -r {{ home }}/mysite/requirements.txt"
+    
+    - name: remove current service file if present
+      file: 
+        path: /etc/systemd/system/socialweb.service
+        state: absent
+
+    - name: create service file
+      file: 
+        path: /etc/systemd/system/socialweb.service
+        state: touch
+
+    - name: configure service file
+      lineinfile:
+        path: /etc/systemd/system/socialweb.service
+        line: "{{ item }}"
+      loop:
+      - "[Service]"
+      - "User=socialweb"
+      - "Group=socialweb"
+      - "WorkingDirectory=/home/socialweb/mysite"
+      - "Environment=\"PATH=/home/socialweb/socialwebenv/bin\""
+      - "ExecStart=/usr/bin/authbind --deep /home/socialweb/socialwebenv/bin/gunicorn --reload --worker-class eventlet -w 1 --certfile={{ chainfile }} --keyfile={{ keyfile }} --bind {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:443 --log-file=/home/socialweb/applog.txt app:app"
+      - ""
+      - "[Install]"
+      - "WantedBy=multi-user.target"
+
+    - name: daemon-reload
+      systemd_service:
+        daemon_reload: true
+    
+    - name: install certbot and authbind
+      package:
+        name: "{{ item }}"
+      loop:
+      - certbot
+      - authbind
+    
+    - name: setup certs ## NEED ACTUAL DOMAIN FOR THIS TO WORK
+      shell: "certbot certonly --standalone -n --agree-tos --email {{domain_name}}@{{domain_name}}.com --domains {{domain_name}} --fullchain-path {{chainfile}} --key-path {{keyfile}}"
+      ignore_errors: true
+
+    - name: setup authbind files
+      file:
+        path: "{{ item }}"
+        mode: "0777"
+        state: touch
+      loop:
+      - /etc/authbind/byport/80
+      - /etc/authbind/byport/443
+
+    - name: start service
+      service:
+        name: socialweb
+        state: restarted
+        enabled: true
