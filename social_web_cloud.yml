@@ -34,6 +34,8 @@
         comment: Social Web Admin User
         append: true
         groups: sudo, socialweb
+        shell: /bin/bash
+        state: present
     
     - name: permit traffic in default zone for https service
       shell: "ufw allow {{ item }}"
@@ -69,28 +71,44 @@
         url: "https://socialweb.cloud/swc.zip"
         dest: "{{ home }}"
         owner: socialweb
+      become: yes
+      become_user: socialweb
 
     - name: unzip file
       unarchive:
         src: "{{ home }}/swc.zip"
         dest: "{{ home }}"
         owner: socialweb
+      become: yes
+      become_user: socialweb
     
-    - name: populate config template (need to transfer example to .j2 file)
+    - name: populate config template
       template:
         src: "{{ home }}/mysite/config.py.j2"
         dest: "{{ home }}/mysite/config.py"
+      become: yes
+      become_user: socialweb
 
     - name: create virtual env for code
       shell: "python3 -m venv {{ home }}/socialwebenv"
+      become: yes
+      become_user: socialweb
 
     - name: source activate socialwebenv
-      shell: "source {{ home }}/socialwebenv/bin/activate"
-      args:
-        executable: /bin/bash
+      shell: "{{ home }}/socialwebenv/bin/pip install -r {{ home }}/mysite/requirements.txt"
+      become: yes
+      become_user: socialweb
+      environment:
+        PATH: "{{ home }}/socialwebenv/bin:{{ ansible_env.PATH }}"
+      register: install_output
 
     - name: install requirements
       shell: "pip install -r {{ home }}/mysite/requirements.txt"
+      become: yes
+      become_user: socialweb
+      environment:
+        PATH: "{{ ansible_env.PATH }}"
+      register: install_output
     
     - name: remove current service file if present
       file: 
@@ -118,8 +136,8 @@
       - "WantedBy=multi-user.target"
 
     - name: daemon-reload
-      systemd_service:
-        daemon_reload: true
+      ansible.builtin.command: systemctl daemon-reload
+      become: yes
     
     - name: install certbot and authbind
       package:
@@ -128,9 +146,31 @@
       - certbot
       - authbind
     
-    - name: setup certs ## NEED ACTUAL DOMAIN FOR THIS TO WORK
-      shell: "certbot certonly --standalone -n --agree-tos --email {{domain_name}}@{{domain_name}}.com --domains {{domain_name}} --fullchain-path {{chainfile}} --key-path {{keyfile}}"
+    - name: setup certs
+      shell: "certbot certonly --standalone -n --agree-tos --email postmaster@{{domain_name}} --domains {{domain_name}}"
       ignore_errors: true
+
+    - name: Find symlinked .pem files
+      find:
+        paths: /etc/letsencrypt/live/173-230-156-34.ip.linodeusercontent.com
+        patterns: '*.pem'
+        follow: false
+        file_type: link
+      register: pem_symlinks
+
+    - name: Copy actual files while preserving symlink names
+      command: >
+        sh -c 'cp --dereference "{{ item.path }}" "/home/socialweb/{{ item.path | basename }}"'
+      with_items: "{{ pem_symlinks.files }}"
+      register: copy_results
+
+    - name: Set ownership and permissions
+      file:
+        path: /home/socialweb/{{ item.path | basename }}
+        owner: socialweb
+        group: socialweb
+        mode: '0644'
+      with_items: "{{ pem_symlinks.files }}"
 
     - name: setup authbind files
       file:
@@ -146,3 +186,8 @@
         name: socialweb
         state: restarted
         enabled: true
+
+    - name: Debug installation output
+      debug:
+        var: install_output.stdout_lines
+
