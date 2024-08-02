@@ -152,7 +152,7 @@
 
     - name: Find symlinked .pem files
       find:
-        paths: /etc/letsencrypt/live/173-230-156-34.ip.linodeusercontent.com
+        paths: "/etc/letsencrypt/live/{{domain_name}}"
         patterns: '*.pem'
         follow: false
         file_type: link
