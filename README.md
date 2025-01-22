@@ -1,32 +1,30 @@
 # socialwebcloud_install_scripts
-This guide will walk you through setting up an Ubuntu virtual server on Linode, accessing it, installing Ansible, cloning a repository, and running an Ansible playbook.
+This guide will walk you through setting up an Ubuntu virtual server on linux web hosting, accessing it, installing Ansible, cloning a repository, and running an Ansible playbook.
 
 ## Prerequisites
 
-- A Linode account
+- A linux web hosting account
 - A registered domain name (optional but recommended)
 
 ## Steps
 
-### 1. Create an Ubuntu Virtual Server on Linode
+### 1. Create an Ubuntu Virtual Server on linux web hosting
 
-1. **Log in to Linode:**
-   - Visit [Linode.com](https://www.linode.com) and log in to your account.
+1. **Log in to linux web hosting:**
+   - Visit your linux web hosting provider and log in to your account.
 
-2. **Create a New Linode:**
-   - Click the “Create Linode” button.
+2. **Create a New linux server:**
    - Select **Ubuntu** as the distribution and choose the version you prefer.
    - Choose a plan that suits your needs.
    - Select a data center region close to your location for better performance.
    - (Optional) Configure additional settings such as backups or VLAN if needed.
 
 3. **Assign a Domain Name (Optional):**
-   - If you have a registered domain name, configure DNS settings to point to your Linode server’s IP address.
-   - Manage DNS settings in the Linode dashboard or through your domain registrar’s website.
+   - If you have a registered domain name, configure DNS settings to point to your linux web hosting server’s IP address.
+   - Manage DNS settings in the linux web hosting dashboard or through your domain registrar’s website.
 
-4. **Complete the Linode Setup:**
-   - Click “Create Linode” to finalize the setup.
-   - Note the public IP address assigned to your Linode.
+4. **Complete the linux web hosting setup:**
+   - Note the public IP address assigned to your linux server.
 
 ### 2. Get Access to the Server
 
@@ -35,14 +33,14 @@ This guide will walk you through setting up an Ubuntu virtual server on Linode, 
 1. **Open an SSH Client:**
    - On Windows, use [PuTTY](https://www.putty.org). On macOS or Linux, use the terminal.
 
-2. **Connect to Your Linode:**
+2. **Connect to Your linux web server:**
    - Open PuTTY (Windows) or your terminal (macOS/Linux).
-   - Enter the IP address of your Linode server.
+   - Enter the IP address of your linux web server.
    - Use the default SSH port (22) for the connection.
 
 3. **Login:**
    - Enter the username (`root` or the username you specified during setup).
-   - Enter the password created during the Linode setup process.
+   - Enter the password created during the linux web hosting setup process.
 
    **Note:** For enhanced security, consider setting up SSH keys and disabling password authentication.
 
