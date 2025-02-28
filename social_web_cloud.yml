@@ -65,7 +65,14 @@
         - python3-setuptools 
         - unzip    
         - python3-venv
+        - sqlcipher
+        - libsqlcipher0
+        - libsqlcipher-dev
     
+    - name: Generate database key
+      shell: "head -c 32 /dev/urandom | xxd -p -c 64"
+      register: db_key_output
+
     - name: pull socialweb zip and place it in socialweb homedir
       get_url:
         url: "https://socialweb.cloud/swc.zip"
@@ -81,7 +88,15 @@
         owner: socialweb
       become: yes
       become_user: socialweb
-    
+
+    - name: Create database key file
+      copy:
+        content: "{{ db_key_output.stdout }}"
+        dest: "{{ home }}/mysite/.db_key"
+        owner: socialweb
+        group: socialweb
+        mode: '0600'
+
     - name: populate config template
       template:
         src: "{{ home }}/mysite/config.py.j2"
@@ -190,4 +205,3 @@
     - name: Debug installation output
       debug:
         var: install_output.stdout_lines
-
