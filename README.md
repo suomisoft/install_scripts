@@ -14,7 +14,7 @@ This guide will walk you through setting up an Ubuntu virtual server on linux we
    - Visit your linux web hosting provider and log in to your account.
 
 2. **Create a New linux server:**
-   - Select **Ubuntu** as the distribution and choose the version you prefer.
+   - Select **Ubuntu** (tested with Ubuntu version 22.04)as the distribution and choose the version you prefer.
    - Choose a plan that suits your needs.
    - Select a data center region close to your location for better performance.
    - (Optional) Configure additional settings such as backups or VLAN if needed.
